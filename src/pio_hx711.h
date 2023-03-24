@@ -6,7 +6,6 @@
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 #include "hardware/gpio.h"
-#include "hardware/spi.h"
 
 struct HX711_Config {
     PIO pio             = pio0;     // PIO identifier

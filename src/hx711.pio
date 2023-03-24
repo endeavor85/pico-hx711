@@ -1,0 +1,32 @@
+; waits for TX FIFO value
+; value specifies how many ADC readings to take
+; each 24-bit reading will be shifted into the FIFO, MSB first
+; after reading, pulse PD_SCK to select channel and gain of next transaction
+
+.program hx711
+
+    pull block              ; (blocking) pull TX FIFO value into OSR (number of readings to take)
+    mov x, osr              ; preload OSR value into scratch register x (number of readings to take)
+
+read_value:                 ; reading loop (outer loop, one loop per value read)
+
+    set y, 23    [0]        ; preload bit counter (number of PD_SCK pulses to generate - 1)
+    wait 0 pin 0 [0]        ; wait for DOUT to fall
+
+; pulse PD_SCK 24 times, reading pin value and shifting one bit into ISR each time
+bit_loop:                   ; pulse loop (inner loop, one pulse per bit read) /-\_
+    set pins, 1 [0]         ; set PD_SCK high  _/-
+    in  pins, 1 [0]         ; read DOUT, shift into ISR
+    set pins, 0 [0]         ; set PD_SCK low   -\_
+    jmp y-- bit_loop        ; repeat bit_loop until y is 0
+
+; select channel and gain for next transaction (based on number of pulses generated here)
+    ; pull block              ; (blocking) pull TX FIFO value into OSR (number of readings to take)
+    ; mov y, osr              ; preload OSR value into scratch register y (number of pulses to take)
+chan_gain_loop:             ; generate 1 to 3 more pulses to set channel and gain of next reading
+                            ; TODO: just doing 1 pulse, so channel A, 24 bits, 128 gain
+    set pins, 1 [1]         ; set PD_SCK high  _/-
+    set pins, 0 [0]         ; set PD_SCK low   -\_
+    ; jmp y-- chan_gain_loop  ; repeat chan_gain_loop until y is 0
+
+    jmp x-- read_value      ; repeat read_value until x is 0

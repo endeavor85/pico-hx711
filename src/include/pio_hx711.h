@@ -6,7 +6,6 @@
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 #include "hardware/gpio.h"
-#include "hardware/spi.h"
 
 struct HX711_Config {
     PIO pio             = pio0;     // PIO identifier
@@ -40,7 +39,7 @@ class HX711 {
 
  private:
     const PIO pio;
-    const uint sm;
+    const uint pio_sm;
     const uint dma_channel;
     const uint pin_sclk;
     const uint pin_data;

@@ -12,7 +12,6 @@ if (NOT TARGET pico_pio_hx711)
 
     target_include_directories(pico_pio_hx711 INTERFACE include)
 
-    # not sure if these can be specified in this library or if the executable needs to specify them
     target_link_libraries(pico_pio_hx711 INTERFACE
         pico_stdlib
         hardware_pio

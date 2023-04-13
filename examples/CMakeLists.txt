@@ -27,8 +27,6 @@ add_executable(example-pico-hx711
 
 target_link_libraries(example-pico-hx711
     pico_stdlib
-    hardware_pio
-    hardware_dma
     pico_pio_hx711
 )
 

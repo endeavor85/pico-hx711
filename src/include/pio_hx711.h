@@ -54,6 +54,13 @@ class HX711 {
 
     // buffer must be preallocated with size |num_reads|
     void read_when_ready(uint32_t read_buffer[], const uint num_reads);
+
+    // loads the hx711 program into pio instruction memory (if not already there), returns program offset address
+    // the program should only be loaded once per pio, it can be shared among state machines within the same pio
+    static uint get_program_offset(PIO pio);
+
+    static uint pio0_offset;  // program offset address in pio0 instruction memory, 0x0000 if not loaded yet
+    static uint pio1_offset;  // program offset address in pio1 instruction memory, 0x0000 if not loaded yet
 };
 
 #endif  // PICO_PIO_HX711_PIO_HX711_H_

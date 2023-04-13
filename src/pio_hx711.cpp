@@ -11,6 +11,10 @@
 
 #include "hx711.pio.h"
 
+// initialize static members
+uint HX711::pio0_offset = 0x0000;  // 0x0000 indicates the program has not been loaded into pio program memory
+uint HX711::pio1_offset = 0x0000;  // 0x0000 indicates the program has not been loaded into pio program memory
+
 HX711::HX711(const HX711_Config &config) :
         pio(config.pio),
         pio_sm(config.pio_sm),
@@ -26,8 +30,9 @@ HX711::HX711(const HX711_Config &config) :
     pio_gpio_init(pio, pin_sclk);  // assign PD_SCK pin to this PIO
     gpio_pull_up(pin_data);  // hold DOUT high, let the slave device ground it to pull it low
 
+    // TODO: creating multiple HX711 instances will cause hx711_program to be loaded multiple times, but we only need it loaded once per pio
     // add program to pio program memory, get resulting memory offset
-    uint pio_offset = pio_add_program(pio, &hx711_program);
+    uint pio_offset = HX711::get_program_offset(pio);
 
     pio_sm_config c = hx711_program_get_default_config(pio_offset);
     sm_config_set_in_pins(&c, pin_data);  // use DOUT pin for pio 'in' (for waits and data reads)
@@ -48,6 +53,28 @@ HX711::HX711(const HX711_Config &config) :
 }
 
 HX711::~HX711() {
+}
+
+uint HX711::get_program_offset(PIO pio) {
+    uint program_offset = 0x0000;
+
+    if (pio0 == pio) {
+        if (pio0_offset == 0x0000) {
+            // load the program into pio0 instructio memory if it is not already present there, store resulting program offset
+            pio0_offset = pio_add_program(pio, &hx711_program);
+        }
+        // return program offset
+        program_offset = pio0_offset;
+    } else if (pio1 == pio) {
+        if (pio1_offset == 0x0000) {
+            // load the program into pio1 instructio memory if it is not already present there, store resulting program offset
+            pio1_offset = pio_add_program(pio, &hx711_program);
+        }
+        // return program offset
+        program_offset = pio1_offset;
+    }
+
+    return program_offset;
 }
 
 float HX711::read_average(const uint num_readings) {

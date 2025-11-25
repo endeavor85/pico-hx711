@@ -20,25 +20,31 @@ int main() {
          << "*** HX711 Example ***" << endl
          << "*********************" << endl << endl;
 
-    HX711_Config hx711_config;
-    hx711_config.pio = pio0;        // PIO identifier
-    hx711_config.pin_sclk = 4u;     // GPIO for serial clock
-    hx711_config.pin_data = 5u;     // GPIO for data
-    hx711_config.offset = -290500;
-    hx711_config.scale = -11114.0;
+    HX711_Config hx711_config {
+        pio0,     // pio         - PIO identifier
+        0u,       // pio_sm      - PIO State Machine
+        0u,       // dma_channel - DMA channel
+        4u,       // pin_sclk    - GPIO for serial clock
+        5u,       // pin_data    - GPIO for data
+        -290500,  // offset      - offset value (applied prior to scale)
+        -11114.0  // scale       - scale value scalar (applied after offset)
+    };
 
     cout << "SCLK on GPIO" << hx711_config.pin_sclk << endl;
     cout << "DATA on GPIO" << hx711_config.pin_data << endl;
 
     HX711 hx711(hx711_config);
 
+    cout << "Scaled,Raw(A_128)" << endl;
+
     while (true) {
-        float avg_reading = hx711.read_average(5);
+        ScaleReading scaleReading = {};
+        hx711.read_average(scaleReading, 5);
 
-        cout << "Weight (A_128): "
-             << std::fixed << std::setw(8) << std::setprecision(2)
-             << avg_reading << endl;
+        cout << std::fixed << std::setw(8) << std::setprecision(2) << scaleReading.scaled_average
+             << std::fixed << std::setw(8) << std::setprecision(0) << scaleReading.raw_average
+             << endl;
 
-        sleep_ms(500);
+        sleep_ms(100);
     }
 }

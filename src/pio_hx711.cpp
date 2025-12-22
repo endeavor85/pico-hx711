@@ -18,7 +18,6 @@ uint HX711::pio1_offset = 0x0000;  // 0x0000 indicates the program has not been 
 HX711::HX711(const HX711_Config &config) :
         pio(config.pio),
         pio_sm(config.pio_sm),
-        dma_channel(config.dma_channel),
         pin_sclk(config.pin_sclk),
         pin_data(config.pin_data),
         offset(config.offset),
@@ -59,15 +58,15 @@ uint HX711::get_program_offset(PIO pio) {
     uint program_offset = 0x0000;
 
     if (pio0 == pio) {
-        if (pio0_offset == 0x0000) {
-            // load the program into pio0 instructio memory if it is not already present there, store resulting program offset
+        if (0x0000 == pio0_offset) {
+            // load the program into pio0 instruction memory if it is not already present there, store resulting program offset
             pio0_offset = pio_add_program(pio, &hx711_program);
         }
         // return program offset
         program_offset = pio0_offset;
     } else if (pio1 == pio) {
-        if (pio1_offset == 0x0000) {
-            // load the program into pio1 instructio memory if it is not already present there, store resulting program offset
+        if (0x0000 == pio1_offset) {
+            // load the program into pio1 instruction memory if it is not already present there, store resulting program offset
             pio1_offset = pio_add_program(pio, &hx711_program);
         }
         // return program offset
@@ -77,7 +76,7 @@ uint HX711::get_program_offset(PIO pio) {
     return program_offset;
 }
 
-float HX711::read_average(const uint num_readings) {
+void HX711::read_average(ScaleReading &scale_reading, const uint num_readings) {
     // allocate buffer for DMA
     // we'll just use the full 32-bit slot per sample (FIFO has 4 slots)
     const uint kNumReadings = num_readings;  // 24 bits per reading, just use a single 32-bit int for each
@@ -90,7 +89,7 @@ float HX711::read_average(const uint num_readings) {
     read_when_ready(read_buffer, kNumReadings);
 
     int32_t raw_values[kNumReadings];
-    int32_t offset_value_sum = 0;
+    int32_t raw_sum = 0;
 
     for (uint i = 0; i < kNumReadings; i++) {
         // result is 24-bit signed (2's complement) integer (stored as uint32)
@@ -100,19 +99,20 @@ float HX711::read_average(const uint num_readings) {
             raw_values[i] |= 0xFF000000;  // sign extension to 32-bit representation
         }
 
-        offset_value_sum += (raw_values[i] - offset);
+        raw_sum += raw_values[i];
 
         // print debug info
         // printf("hx711 read[%d]: %08X\t%d\t%6.02f\n",
         //     i, read_buffer[i], raw_values[i], ((raw_values[i] - offset) / scale));
     }
-
-    // average values, apply offset, then scale
-    return (offset_value_sum / static_cast<float>(num_readings)) / scale;
+    
+    // divide raw_sum by number of readings to compute average reading
+    scale_reading.raw_average = raw_sum / static_cast<float>(num_readings); 
+    // apply offset, then scale
+    scale_reading.scaled_average = (scale_reading.raw_average - offset) / scale;
 }
 
 void HX711::read_when_ready(uint32_t read_buffer[], const uint num_readings) {
-// void HX711::read_when_ready(char read_buffer[], const uint num_readings) {
     // stop the state machine (it should already be stopped though)
     pio_sm_set_enabled(pio, pio_sm, false);
 
@@ -121,6 +121,7 @@ void HX711::read_when_ready(uint32_t read_buffer[], const uint num_readings) {
     pio_sm_clear_fifos(pio, pio_sm);
     pio_sm_restart(pio, pio_sm);
 
+    int dma_channel = dma_claim_unused_channel(true);
     dma_channel_config dma_config = dma_channel_get_default_config(dma_channel);
     channel_config_set_read_increment(&dma_config, false);
     channel_config_set_write_increment(&dma_config, true);
@@ -150,6 +151,7 @@ void HX711::read_when_ready(uint32_t read_buffer[], const uint num_readings) {
 
     // wait for reading to come into DMA buffer (taken from PIO RX FIFO)
     dma_channel_wait_for_finish_blocking(dma_channel);
+    dma_channel_unclaim(dma_channel);
 }
 
 void HX711::set_channel_gain_selection(ChannelAndGainSelection _channel_gain_selection) {

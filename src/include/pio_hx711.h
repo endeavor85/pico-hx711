@@ -10,7 +10,6 @@
 struct HX711_Config {
     PIO pio             = pio0;     // PIO identifier
     uint pio_sm         = 0u;       // PIO State Machine
-    uint dma_channel    = 0u;
     uint pin_sclk       = 4u;       // GPIO for serial clock
     uint pin_data       = 5u;       // GPIO for data
     int32_t offset      = 0;        // offset value (applied prior to scale)
@@ -23,12 +22,18 @@ enum ChannelAndGainSelection {
     A_64  = 3,  // channel A, 64 gain, 3 extra pulses
 };
 
+struct ScaleReading {
+    uint  num_samples;
+    float raw_average;
+    float scaled_average;
+};
+
 class HX711 {
  public:
     HX711(const HX711_Config &config);
     ~HX711();
 
-    float read_average(const uint num_readings);
+    void read_average(ScaleReading &scale_reading, const uint num_readings);
 
     void set_channel_gain_selection(ChannelAndGainSelection _channel_gain_selection);
     ChannelAndGainSelection get_channel_gain_selection();
@@ -40,7 +45,6 @@ class HX711 {
  private:
     const PIO pio;
     const uint pio_sm;
-    const uint dma_channel;
     const uint pin_sclk;
     const uint pin_data;
 
@@ -50,7 +54,7 @@ class HX711 {
 
     // unscaled value
     int32_t offset = 0;
-    float scale = 1;
+    float scale = 1.0;
 
     // buffer must be preallocated with size |num_reads|
     void read_when_ready(uint32_t read_buffer[], const uint num_reads);

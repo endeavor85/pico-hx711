@@ -13,7 +13,7 @@ using std::endl;
 int main() {
     stdio_init_all();
 
-    sleep_ms(1000);
+    sleep_ms(5000);
 
     cout << endl
          << "*********************" << endl
@@ -23,7 +23,6 @@ int main() {
     HX711_Config hx711_config {
         pio0,     // pio         - PIO identifier
         0u,       // pio_sm      - PIO State Machine
-        0u,       // dma_channel - DMA channel
         4u,       // pin_sclk    - GPIO for serial clock
         5u,       // pin_data    - GPIO for data
         -290500,  // offset      - offset value (applied prior to scale)

@@ -30,6 +30,7 @@ HX711::HX711(const HX711_Config &config) :
     gpio_pull_up(pin_data);  // hold DOUT high, let the slave device ground it to pull it low
 
     // TODO: creating multiple HX711 instances will cause hx711_program to be loaded multiple times, but we only need it loaded once per pio
+    // TODO: create a single class that initializes the pio program memory (once) and provides functions to create HX711 instances
     // add program to pio program memory, get resulting memory offset
     uint pio_offset = HX711::get_program_offset(pio);
 
